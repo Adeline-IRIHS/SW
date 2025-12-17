@@ -411,7 +411,7 @@ async function selectSuggestedPlayer(baseId, slotIndex, player) {
 // Réinitialiser un slot
 async function resetSlot(baseId, slotIndex) {
     if (confirm('Voulez-vous vraiment réinitialiser cet emplacement ?')) {
-        await sendUpdate(baseId, slotIndex, '', []);
+        await sendUpdate(baseId, slotIndex, null, []);
         await loadState();
     }
 }
@@ -510,26 +510,12 @@ async function sendUpdate(baseId, slotIndex, player, monsters) {
 }
 
 // 4. Détection des conflits (Unicité globale)
+// This function is now deprecated - quantity-based conflicts are handled by getAvailableMonsters
+// Keeping it for backwards compatibility but it returns empty array
 function checkConflicts(player, monsters, currentBaseId, currentSlotIndex) {
-    let conflicts = [];
-    monsters.forEach(mId => {
-        if (!mId) return;
-        
-        // Parcourir tout le plan
-        for (const [bId, slots] of Object.entries(currentPlan)) {
-            slots.forEach((s, sIdx) => {
-                // On ignore le slot actuel qu'on est en train d'éditer
-                if (bId == currentBaseId && sIdx == currentSlotIndex) return;
-
-                // Si c'est le même monstre utilisé n'importe où ailleurs (peu importe le joueur ? Non, "Un monstre ne peut être utilisé qu'une seule fois")
-                // -> Dans SW, c'est une fois par joueur. Donc on vérifie si CE joueur utilise ce monstre ailleurs.
-                if (s.player === player && s.monsters.includes(mId)) {
-                    conflicts.push(`${getMonsterName(mId)} déjà utilisé en Base ${bId} (Slot ${sIdx + 1})`);
-                }
-            });
-        }
-    });
-    return conflicts;
+    // Conflict detection is now handled by quantityConflicts in the rendering functions
+    // which use getAvailableMonsters() to properly check owned vs used quantities
+    return [];
 }
 
 // 5. Import JSON
