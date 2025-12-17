@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>SW Siege Planner</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .base-btn { width: 100%; height: 80px; font-size: 1.2rem; margin-bottom: 10px; }
+        .slot-card { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+        .monster-badge { display: inline-block; padding: 5px; background: #eee; margin: 2px; border-radius: 4px; }
+        .conflict { background-color: #ffcccc; border: 1px solid red; }
+        .conflict-msg { color: red; font-size: 0.8rem; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container mt-4">
+    <h1 class="text-center mb-4">🛡️ SW Siege Planner</h1>
+
+    <div class="row">
+        <!-- Colonne Gauche : Navigation Bases -->
+        <div class="col-md-4">
+            <h3>Bases</h3>
+            <div class="row" id="bases-container">
+                <!-- Généré par JS : 12 boutons -->
+            </div>
+            
+            <hr>
+            <h4>Import JSON</h4>
+            <input type="text" id="import-pseudo" class="form-control mb-2" placeholder="Pseudo du joueur">
+            <input type="file" id="import-file" class="form-control mb-2" accept=".json">
+            <button class="btn btn-secondary w-100" onclick="importJson()">Importer</button>
+        </div>
+
+        <!-- Colonne Droite : Détails Base & Édition -->
+        <div class="col-md-8">
+            <div id="base-view" style="display:none;">
+                <h2 id="base-title">Base X</h2>
+                <div id="slots-container">
+                    <!-- Généré par JS : 5 emplacements -->
+                </div>
+            </div>
+            <div id="welcome-view" class="text-center text-muted mt-5">
+                <p>Sélectionnez une base à gauche pour commencer.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="mapping.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
