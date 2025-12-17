@@ -1,17 +1,33 @@
 let currentPlan = {};
 let guildPlayersList = [];
+let guestPlayersList = [];
 let currentBaseId = null;
 let playerMonstersCache = {}; // Cache des monstres par joueur
 let currentWorkflowMode = 'player-first'; // 'player-first' or 'monsters-first'
 let currentEditingSlot = null; // Track which slot is being edited in monsters-first mode
+
+// Helper function to check if a player is a guest
+function isGuest(playerName) {
+    return guestPlayersList.includes(playerName);
+}
 
 // Chargement initial
 async function loadState() {
     const res = await fetch('/api/state');
     const data = await res.json();
     currentPlan = data.plan;
-    guildPlayersList = data.players;
+    
+    // Gérer le format de la liste des joueurs (peut être un tableau d'objets ou de strings)
+    if (data.players && data.players.length > 0 && typeof data.players[0] === 'object') {
+        guildPlayersList = data.players.map(p => p.name);
+    } else {
+        guildPlayersList = data.players || [];
+    }
+    
+    guestPlayersList = data.guests || [];
+    
     renderBasesMenu();
+    renderGuestList();
     if (currentBaseId) await renderBaseDetails(currentBaseId);
 }
 
@@ -26,7 +42,19 @@ async function loadPlayerMonsters(playerName) {
             console.error(`Failed to load monsters for ${playerName}`);
             return [];
         }
-        const monsters = await res.json();
+        const data = await res.json();
+        
+        // Si c'est un guest, retourner tous les monstres possibles
+        if (data.isGuest) {
+            // Créer un tableau avec tous les IDs de monstres du MONSTER_MAPPING
+            const allMonsters = Object.keys(MONSTER_MAPPING).map(id => ({
+                unit_master_id: parseInt(id, 10)
+            }));
+            playerMonstersCache[playerName] = allMonsters;
+            return allMonsters;
+        }
+        
+        const monsters = data;
         playerMonstersCache[playerName] = monsters;
         return monsters;
     } catch (error) {
@@ -39,6 +67,30 @@ async function loadPlayerMonsters(playerName) {
 function getAvailableMonsters(playerName, playerMonsters) {
     const monsterCounts = {};
     
+    // Si c'est un guest, donner une quantité illimitée pour tous les monstres
+    if (isGuest(playerName)) {
+        playerMonsters.forEach(m => {
+            const id = m.unit_master_id;
+            monsterCounts[id] = { owned: 999, used: 0 };
+        });
+        
+        // Compter les monstres déjà utilisés par ce guest
+        for (const [baseId, slots] of Object.entries(currentPlan)) {
+            slots.forEach(slot => {
+                if (slot.player === playerName) {
+                    slot.monsters.forEach(mId => {
+                        if (mId && monsterCounts[mId]) {
+                            monsterCounts[mId].used++;
+                        }
+                    });
+                }
+            });
+        }
+        
+        return monsterCounts;
+    }
+    
+    // Pour les joueurs normaux
     // Compter les monstres possédés
     playerMonsters.forEach(m => {
         const id = m.unit_master_id;
@@ -121,7 +173,10 @@ async function renderPlayerFirstWorkflow(baseId, slots, container) {
         
         let playerSelect = `<select class="form-select mb-2" onchange="updateSlotPlayer(${baseId}, ${index}, this.value)">
             <option value="">-- Choisir un joueur --</option>
-            ${guildPlayersList.map(p => `<option value="${p}" ${slot.player === p ? 'selected' : ''}>${p}</option>`).join('')}
+            ${guildPlayersList.map(p => {
+                const guestBadge = isGuest(p) ? ' 👤 Guest' : '';
+                return `<option value="${p}" ${slot.player === p ? 'selected' : ''}>${p}${guestBadge}</option>`;
+            }).join('')}
         </select>`;
 
         let monstersHtml = '';
@@ -437,6 +492,10 @@ async function findPlayersWithMonsters(monsterIds) {
     }
     
     for (const playerName of guildPlayersList) {
+        // Exclure les guests des suggestions en mode "monstres d'abord"
+        if (isGuest(playerName)) {
+            continue;
+        }
         const playerMonsters = await loadPlayerMonsters(playerName);
         const playerMonsterIds = new Set(playerMonsters.map(m => m.unit_master_id));
         
@@ -550,6 +609,83 @@ async function importJson() {
         }
     };
     reader.readAsText(file);
+}
+
+// 6. Gestion des guests
+async function addGuest() {
+    const guestInput = document.getElementById('guest-pseudo');
+    const guestName = guestInput.value.trim();
+    
+    if (!guestName) {
+        alert("Veuillez entrer un pseudo pour le guest");
+        return;
+    }
+    
+    try {
+        const res = await fetch('/api/add-guest', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ guestName })
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+            alert(data.error || "Erreur lors de l'ajout du guest");
+            return;
+        }
+        
+        alert("Guest ajouté avec succès !");
+        guestInput.value = '';
+        await loadState();
+    } catch (err) {
+        console.error(err);
+        alert("Erreur lors de l'ajout du guest");
+    }
+}
+
+async function removeGuest(guestName) {
+    if (!confirm(`Voulez-vous vraiment supprimer le guest "${guestName}" ?\nToutes ses assignations seront supprimées.`)) {
+        return;
+    }
+    
+    try {
+        const res = await fetch(`/api/remove-guest/${encodeURIComponent(guestName)}`, {
+            method: 'DELETE'
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+            alert(data.error || "Erreur lors de la suppression du guest");
+            return;
+        }
+        
+        alert("Guest supprimé avec succès !");
+        await loadState();
+    } catch (err) {
+        console.error(err);
+        alert("Erreur lors de la suppression du guest");
+    }
+}
+
+function renderGuestList() {
+    const container = document.getElementById('guest-list');
+    if (!container) return;
+    
+    if (guestPlayersList.length === 0) {
+        container.innerHTML = '<p class="text-muted">Aucun guest ajouté</p>';
+        return;
+    }
+    
+    container.innerHTML = guestPlayersList.map(guest => `
+        <div class="guest-list-item">
+            <span>👤 ${guest}</span>
+            <button class="btn btn-sm btn-danger" onclick="removeGuest('${guest}')">
+                <i class="bi bi-trash"></i> Supprimer
+            </button>
+        </div>
+    `).join('');
 }
 
 // Démarrage
