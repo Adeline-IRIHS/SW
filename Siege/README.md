@@ -134,6 +134,28 @@ npm start
 **Port déjà utilisé :**
 - Le port 3000 est utilisé par défaut. Modifier la variable `PORT` dans `server.js` si nécessaire.
 
+## Sécurité
+
+### Recommandations pour la production
+
+Si vous déployez cette application en production, considérez les améliorations de sécurité suivantes :
+
+1. **Rate Limiting** : Ajoutez une limitation du taux de requêtes pour prévenir les abus
+   ```bash
+   npm install express-rate-limit
+   ```
+
+2. **Authentification** : Ajoutez une couche d'authentification pour protéger l'accès à l'application
+
+3. **HTTPS** : Utilisez HTTPS en production avec un certificat SSL/TLS
+
+4. **Validation des entrées** : Renforcez la validation des données d'entrée
+
+5. **MongoDB** : 
+   - Utilisez des credentials MongoDB sécurisés
+   - Activez l'authentification MongoDB
+   - Configurez les règles de pare-feu
+
 ## Licence
 
 Ce projet est un outil communautaire pour Summoners War.
