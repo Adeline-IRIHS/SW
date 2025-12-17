@@ -343,7 +343,8 @@ async function updateSlotPlayer(baseId, slotIndex, player) {
 async function updateSlotMonster(baseId, slotIndex, monsterIdx, value) {
     const slot = currentPlan[baseId][slotIndex];
     const newMonsters = [...slot.monsters];
-    newMonsters[monsterIdx] = value ? parseInt(value) : null;
+    const parsedValue = value ? parseInt(value, 10) : null;
+    newMonsters[monsterIdx] = (parsedValue && !isNaN(parsedValue)) ? parsedValue : null;
     await sendUpdate(baseId, slotIndex, slot.player, newMonsters);
 }
 
@@ -351,7 +352,8 @@ async function updateSlotMonster(baseId, slotIndex, monsterIdx, value) {
 async function updateMonstersFirstSlotMonster(baseId, slotIndex, monsterIdx, value) {
     const slot = currentPlan[baseId][slotIndex];
     const newMonsters = [...slot.monsters];
-    newMonsters[monsterIdx] = value ? parseInt(value) : null;
+    const parsedValue = value ? parseInt(value, 10) : null;
+    newMonsters[monsterIdx] = (parsedValue && !isNaN(parsedValue)) ? parsedValue : null;
     // On garde le joueur actuel (peut être null), on met juste à jour les monstres
     await sendUpdate(baseId, slotIndex, slot.player, newMonsters);
 }
@@ -367,19 +369,22 @@ async function selectSuggestedPlayer(baseId, slotIndex, player) {
 async function findPlayersWithMonsters(monsterIds) {
     const playersWithAllMonsters = [];
     
+    // Convert monsterIds to numbers for consistent comparison
+    const numericMonsterIds = monsterIds.map(mId => parseInt(mId, 10)).filter(id => !isNaN(id));
+    
     for (const playerName of guildPlayersList) {
         const playerMonsters = await loadPlayerMonsters(playerName);
         const playerMonsterIds = new Set(playerMonsters.map(m => m.unit_master_id));
         
         // Vérifier si le joueur possède tous les monstres
-        const hasAllMonsters = monsterIds.every(mId => playerMonsterIds.has(parseInt(mId)));
+        const hasAllMonsters = numericMonsterIds.every(mId => playerMonsterIds.has(mId));
         
         if (hasAllMonsters) {
             // Vérifier également la disponibilité (pas déjà utilisés)
             const monsterAvailability = getAvailableMonsters(playerName, playerMonsters);
-            const allAvailable = monsterIds.every(mId => {
-                const availability = monsterAvailability[parseInt(mId)];
-                return availability && (availability.owned - availability.used) > 0;
+            const allAvailable = numericMonsterIds.every(mId => {
+                const availability = monsterAvailability[mId];
+                return availability && (availability.owned - availability.used) >= 1;
             });
             
             if (allAvailable) {
