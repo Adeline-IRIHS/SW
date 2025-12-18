@@ -82,11 +82,3 @@ SW/
 ├── vercel.json          # Configuration Vercel
 └── DEPLOYMENT.md        # Guide de déploiement
 ```
-
-## 🤝 Contribuer
-
-Les contributions sont les bienvenues! N'hésitez pas à ouvrir une issue ou une pull request.
-
-## 📝 Licence
-
-Ce projet est open source.
