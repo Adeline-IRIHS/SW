@@ -49,7 +49,7 @@ siegePlanSchema.statics.getCurrentPlan = async function() {
         // Créer un nouveau plan avec 12 bases, chacune ayant 5 slots vides
         const bases = new Map();
         for (let i = 1; i <= 12; i++) {
-            bases.set(String(i), Array(5).fill(null).map(() => ({ player: null, monsters: [] })));
+            bases.set(String(i), Array.from({ length: 5 }, () => ({ player: null, monsters: [] })));
         }
         
         plan = await this.create({

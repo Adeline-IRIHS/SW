@@ -25,11 +25,14 @@ const connectDB = async () => {
     }
 };
 
-// Gestion de la déconnexion propre
-process.on('SIGINT', async () => {
-    await mongoose.connection.close();
-    console.log('Connexion MongoDB fermée');
-    process.exit(0);
-});
+// Gestion de la déconnexion propre pour les déploiements traditionnels (non-serverless)
+// Note: Dans Vercel (serverless), cette gestion n'est pas nécessaire
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+    process.on('SIGINT', async () => {
+        await mongoose.connection.close();
+        console.log('Connexion MongoDB fermée');
+        process.exit(0);
+    });
+}
 
 module.exports = connectDB;

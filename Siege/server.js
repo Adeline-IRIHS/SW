@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
+const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/database');
 const Player = require('./models/Player');
 const SiegePlan = require('./models/SiegePlan');
@@ -10,6 +11,18 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.static('.'));
 app.use(bodyParser.json({ limit: '50mb' }));
+
+// Configuration du rate limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limite chaque IP à 100 requêtes par fenêtre
+    message: 'Trop de requêtes depuis cette IP, veuillez réessayer plus tard.',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Appliquer le rate limiting à toutes les routes API
+app.use('/api/', limiter);
 
 // Connexion à MongoDB
 connectDB();
@@ -197,17 +210,27 @@ app.delete('/api/remove-guest/:guestName', async (req, res) => {
         
         // Nettoyer les assignations de ce guest dans le plan de siège
         const siegePlan = await SiegePlan.getCurrentPlan();
+        let modified = false;
         
         siegePlan.bases.forEach((slots, baseId) => {
+            let baseModified = false;
             slots.forEach((slot, index) => {
                 if (slot.player === guestName) {
                     slots[index] = { player: null, monsters: [] };
+                    baseModified = true;
+                    modified = true;
                 }
             });
-            siegePlan.bases.set(baseId, slots);
+            // Ne mettre à jour que les bases modifiées
+            if (baseModified) {
+                siegePlan.bases.set(baseId, slots);
+            }
         });
         
-        await siegePlan.save();
+        // Sauvegarder seulement si des modifications ont été faites
+        if (modified) {
+            await siegePlan.save();
+        }
         
         // Supprimer le guest
         await Player.deleteOne({ playerName: guestName, isGuest: true });
