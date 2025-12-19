@@ -251,6 +251,12 @@ app.delete('/api/remove-guest/:guestName', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Serveur lancé sur http://localhost:${PORT}`);
-});
+// Démarrer le serveur seulement en local (pas sur Vercel)
+if (!process.env.VERCEL) {
+    app.listen(PORT, () => {
+        console.log(`Serveur lancé sur http://localhost:${PORT}`);
+    });
+}
+
+// Export pour Vercel serverless functions
+module.exports = app;
