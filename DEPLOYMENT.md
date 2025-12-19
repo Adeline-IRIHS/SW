@@ -90,6 +90,13 @@ mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/sw-siege-planner?retr
 
 ## Dépannage
 
+### Erreur "Cannot GET /"
+
+Cette erreur a été corrigée dans la dernière version. Si vous rencontrez toujours cette erreur:
+- Assurez-vous d'utiliser la dernière version du code
+- Vérifiez que le déploiement Vercel a réussi sans erreurs
+- Regardez les logs Vercel pour voir s'il y a des erreurs de démarrage
+
 ### Erreur de connexion MongoDB
 
 Si vous voyez "Erreur de connexion MongoDB":
