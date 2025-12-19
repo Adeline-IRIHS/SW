@@ -254,11 +254,7 @@ app.delete('/api/remove-guest/:guestName', async (req, res) => {
 });
 
 // Handle favicon requests to avoid 404 errors
-app.get('/favicon.ico', (req, res) => {
-    res.status(204).end(); // No content
-});
-
-app.get('/favicon.png', (req, res) => {
+app.get(['/favicon.ico', '/favicon.png'], (req, res) => {
     res.status(204).end(); // No content
 });
 
